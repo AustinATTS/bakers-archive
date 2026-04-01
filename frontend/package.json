@@ -2,12 +2,17 @@
   "name": "bakers-archive",
   "version": "0.1.0",
   "description": "The Baker's Archive",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  "keywords": [],
-  "author": "Austin Welsh-Graham",
-  "license": "ISC",
-  "type": "commonjs"
+  "dependencies": {
+    "@mui/material": "^7.3.9"
+  },
+  "devDependencies": {
+
+  },
+  "author": "Austin Welsh-Graham"
 }
