@@ -1,5 +1,3 @@
-LABEL authors="AustinWelsh-Graham"
-
 FROM node:24.14.1-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
