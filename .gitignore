@@ -1,6 +1,3 @@
-# Dependencies
-node_modules/
-
 # Logs
 logs/
 *.log
@@ -14,30 +11,18 @@ pids/
 *.seed
 *.pid.lock
 
-# Environment variables
+# Environment
 .env
+.venv/
 .env.local
 .env.*.local
+*.env.local
 
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# OS files
-.DS_Store
-Thumbs.db
+# Node.js
+node_modules/
+.next/
+frontend/.next/
+frontend/node_modules/
 
 # IDE
 .idea/
-.vscode/
-*.swp
-*.swo
-*~
