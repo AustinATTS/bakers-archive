@@ -1,0 +1,15 @@
+{
+  "id": "sourdough-country-loaf",
+  "name": "Sourdough Country Loaf",
+  "author": "Chad Robertson",
+  "book": "Tartine Bread",
+  "type": "sourdough",
+  "ingredients": [
+    "450g bread flour",
+    "50g whole wheat flour",
+    "375g water",
+    "100g active sourdough starter",
+    "10g salt"
+  ],
+  "tags": ["sourdough", "artisan", "country", "levain"]
+}

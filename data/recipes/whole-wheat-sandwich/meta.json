@@ -1,0 +1,18 @@
+{
+  "id": "whole-wheat-sandwich",
+  "name": "Whole Wheat Sandwich Bread",
+  "author": "King Arthur Baking",
+  "book": "The All-Purpose Baker's Companion",
+  "type": "enriched",
+  "ingredients": [
+    "360g whole wheat flour",
+    "120g bread flour",
+    "280ml warm water",
+    "2 tsp instant yeast",
+    "1.5 tsp salt",
+    "2 tbsp honey",
+    "2 tbsp butter",
+    "1/4 cup powdered milk"
+  ],
+  "tags": ["whole-wheat", "sandwich", "everyday", "enriched"]
+}

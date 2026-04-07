@@ -1,0 +1,18 @@
+{
+  "id": "brioche-classic",
+  "name": "Classic Brioche",
+  "author": "Pierre Hermé",
+  "book": "Larousse du Pain",
+  "type": "enriched",
+  "ingredients": [
+    "500g bread flour",
+    "4 tsp instant yeast",
+    "1.5 tsp salt",
+    "3 tbsp sugar",
+    "5 eggs, room temperature",
+    "250g unsalted butter, softened",
+    "2 tbsp whole milk",
+    "1 egg + 1 tbsp milk (egg wash)"
+  ],
+  "tags": ["brioche", "french", "enriched", "butter", "breakfast"]
+}

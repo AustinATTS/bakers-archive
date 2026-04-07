@@ -1,0 +1,15 @@
+{
+  "id": "baguette-traditional",
+  "name": "Traditional French Baguette",
+  "author": "Jeffrey Hamelman",
+  "book": "Bread: A Baker's Book of Techniques and Recipes",
+  "type": "lean",
+  "ingredients": [
+    "500g bread flour",
+    "350g water",
+    "10g salt",
+    "5g instant yeast",
+    "5g malt powder (optional)"
+  ],
+  "tags": ["baguette", "french", "lean", "classic", "crust"]
+}
