@@ -1,6 +1,7 @@
 /**
  * Authentication context for The Baker's Archive.
  */
+
 'use client';
 
 import React, {

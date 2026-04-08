@@ -2,7 +2,7 @@
  * Auth API helpers for The Baker's Archive.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://bakers-archive-api.austinatts.co.uk/';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://bakers-archive-api.austinatts.co.uk';
 
 const TOKEN_KEY = 'bakers_token';
 
