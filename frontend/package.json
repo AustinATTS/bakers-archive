@@ -1,6 +1,6 @@
 {
   "name": "bakers-archive",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The Baker's Archive",
   "scripts": {
     "dev": "next dev",
