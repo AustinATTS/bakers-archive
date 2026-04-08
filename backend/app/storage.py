@@ -74,11 +74,9 @@ def recipe_exists(recipe_id: str) -> bool:
     with _session() as db:
         return db.get(RecipeRow, recipe_id) is not None
 
-
 def list_recipe_ids() -> List[str]:
     with _session() as db:
         return [row.id for row in db.query(RecipeRow).all()]
-
 
 def read_meta(recipe_id: str) -> Optional[Dict[str, Any]]:
     _validate_recipe_id(recipe_id)
@@ -176,10 +174,6 @@ def seed_data_from_bundle() -> None:
     bundle_recipes = os.path.join(_BUNDLE_DATA_DIR, "recipes")
     if not os.path.isdir(bundle_recipes):
         return
-    # Skip if any recipes already exist.
-    with _session() as db:
-        if db.query(RecipeRow).count() > 0:
-            return
     for entry in os.listdir(bundle_recipes):
         src = os.path.join(bundle_recipes, entry)
         if not os.path.isdir(src):
@@ -189,6 +183,12 @@ def seed_data_from_bundle() -> None:
             continue
         with open(meta_path, "r", encoding="utf-8") as fh:
             meta = json.load(fh)
+        recipe_id = meta.get("id")
+        if not recipe_id:
+            continue
+        with _session() as db:
+            if db.get(RecipeRow, recipe_id) is not None:
+                continue
         recipe_text = ""
         recipe_txt_path = os.path.join(src, "recipe.txt")
         if os.path.isfile(recipe_txt_path):
@@ -202,7 +202,7 @@ def seed_data_from_bundle() -> None:
         with _session() as db:
             db.add(
                 RecipeRow(
-                    id=meta["id"],
+                    id=recipe_id,
                     name=meta.get("name", ""),
                     author=meta.get("author", ""),
                     book=meta.get("book", ""),
