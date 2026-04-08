@@ -31,6 +31,7 @@ import {
   updateRecipeText,
   updateRecipeNotes,
 } from '@/lib/api';
+import { useAuth } from '@/lib/AuthContext';
 import RecipeMetadata from './RecipeMetadata';
 
 interface RecipeViewProps {
@@ -58,6 +59,7 @@ function TabPanel({ children, value, index }: TabPanelProps): React.JSX.Element 
 }
 
 export default function RecipeView({ recipeId }: RecipeViewProps): React.JSX.Element {
+  const { user } = useAuth();
   const [recipe, setRecipe] = useState<RecipeMeta | null>(null);
   const [recipeText, setRecipeText] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
@@ -196,43 +198,45 @@ export default function RecipeView({ recipeId }: RecipeViewProps): React.JSX.Ele
 
         <TabPanel value={activeTab} index={0}>
           <Box sx={{ px: { xs: 2, md: 3 }, pb: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1, gap: 1 }}>
-              {editingRecipe ? (
-                <>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<CancelIcon />}
-                    onClick={() => setEditingRecipe(false)}
-                    disabled={saving}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    startIcon={saving ? <CircularProgress size={14} /> : <SaveIcon />}
-                    onClick={handleSaveRecipeText}
-                    disabled={saving}
-                  >
-                    Save
-                  </Button>
-                </>
-              ) : (
-                <Tooltip title="Edit recipe">
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setDraftRecipeText(recipeText);
-                      setEditingRecipe(true);
-                    }}
-                    sx={{ color: 'primary.main' }}
-                  >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Box>
+            {user && (
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1, gap: 1 }}>
+                {editingRecipe ? (
+                  <>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<CancelIcon />}
+                      onClick={() => setEditingRecipe(false)}
+                      disabled={saving}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      startIcon={saving ? <CircularProgress size={14} /> : <SaveIcon />}
+                      onClick={handleSaveRecipeText}
+                      disabled={saving}
+                    >
+                      Save
+                    </Button>
+                  </>
+                ) : (
+                  <Tooltip title="Edit recipe">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setDraftRecipeText(recipeText);
+                        setEditingRecipe(true);
+                      }}
+                      sx={{ color: 'primary.main' }}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Box>
+            )}
             {editingRecipe ? (
               <TextField
                 fullWidth
@@ -295,43 +299,45 @@ export default function RecipeView({ recipeId }: RecipeViewProps): React.JSX.Ele
 
         <TabPanel value={activeTab} index={2}>
           <Box sx={{ px: { xs: 2, md: 3 }, pb: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1, gap: 1 }}>
-              {editingNotes ? (
-                <>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<CancelIcon />}
-                    onClick={() => setEditingNotes(false)}
-                    disabled={saving}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    startIcon={saving ? <CircularProgress size={14} /> : <SaveIcon />}
-                    onClick={handleSaveNotes}
-                    disabled={saving}
-                  >
-                    Save Notes
-                  </Button>
-                </>
-              ) : (
-                <Tooltip title="Edit notes">
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setDraftNotes(notes);
-                      setEditingNotes(true);
-                    }}
-                    sx={{ color: 'primary.main' }}
-                  >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Box>
+            {user && (
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1, gap: 1 }}>
+                {editingNotes ? (
+                  <>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<CancelIcon />}
+                      onClick={() => setEditingNotes(false)}
+                      disabled={saving}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      startIcon={saving ? <CircularProgress size={14} /> : <SaveIcon />}
+                      onClick={handleSaveNotes}
+                      disabled={saving}
+                    >
+                      Save Notes
+                    </Button>
+                  </>
+                ) : (
+                  <Tooltip title="Edit notes">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setDraftNotes(notes);
+                        setEditingNotes(true);
+                      }}
+                      sx={{ color: 'primary.main' }}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Box>
+            )}
             {editingNotes ? (
               <TextField
                 fullWidth
