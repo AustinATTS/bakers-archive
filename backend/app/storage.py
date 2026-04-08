@@ -6,7 +6,8 @@ import re
 import shutil
 from typing import Any, Dict, List, Optional
 
-RECIPES_DIR = "/tmp/data"
+DATA_DIR = "/tmp/data"
+RECIPES_DIR = os.path.join(DATA_DIR, "recipes")
 
 _SAFE_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
