@@ -105,3 +105,7 @@ npm start
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Base URL of the backend API |
 
 ---
+
+### Vercel
+
+Placeholder for vercel
