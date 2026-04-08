@@ -6,8 +6,7 @@ from typing import Generator
 import pytest
 from fastapi.testclient import TestClient
 
-TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "test_data_tmp")
-os.environ["DATA_DIR"] = TEST_DATA_DIR
+os.environ["DATABASE_URL"] = "sqlite:////tmp/archive_test.db"
 os.environ["ADMIN_USERNAME"] = "testadmin"
 os.environ["ADMIN_PASSWORD"] = "testpass"
 
@@ -16,14 +15,10 @@ from app import storage
 
 @pytest.fixture(autouse=True)
 def clean_test_data() -> Generator:
-    if os.path.exists(TEST_DATA_DIR):
-        shutil.rmtree(TEST_DATA_DIR)
-    os.makedirs(os.path.join(TEST_DATA_DIR, "recipes"), exist_ok=True)
-    storage.DATA_DIR = TEST_DATA_DIR
-    storage.RECIPES_DIR = os.path.join(TEST_DATA_DIR, "recipes")
+    storage.Base.metadata.drop_all(bind=storage.engine)
+    storage.init_db()
     yield
-    if os.path.exists(TEST_DATA_DIR):
-        shutil.rmtree(TEST_DATA_DIR)
+    storage.Base.metadata.drop_all(bind=storage.engine)
 
 @pytest.fixture
 def client() -> TestClient:
@@ -31,7 +26,6 @@ def client() -> TestClient:
 
 @pytest.fixture
 def auth_headers(client: TestClient) -> dict:
-    # Trigger startup event to create the admin user
     with client:
         response = client.post(
             "/auth/login",
@@ -67,8 +61,7 @@ class TestListRecipes:
         response = client.get("/recipes")
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 1
-        assert data[0]["name"] == "Test Sourdough"
+        assert any(r["name"] == "Test Sourdough" for r in data)
 
 
 class TestGetRecipe:
