@@ -2,6 +2,8 @@
  * API client for The Baker's Archive backend.
  */
 
+import { getToken } from './auth';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 export interface RecipeMeta {
@@ -19,6 +21,11 @@ export interface SearchParams {
   type?: string;
   author?: string;
   tags?: string;
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export async function listRecipes(): Promise<RecipeMeta[]> {
@@ -61,7 +68,7 @@ export async function getRecipeNotes(recipeId: string): Promise<string> {
 export async function updateRecipeText(recipeId: string, content: string): Promise<void> {
   const response = await fetch(`${API_URL}/recipes/${encodeURIComponent(recipeId)}/recipe`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ content }),
   });
   if (!response.ok) throw new Error(`Failed to update recipe text: ${response.statusText}`);
@@ -70,7 +77,7 @@ export async function updateRecipeText(recipeId: string, content: string): Promi
 export async function updateRecipeNotes(recipeId: string, content: string): Promise<void> {
   const response = await fetch(`${API_URL}/recipes/${encodeURIComponent(recipeId)}/notes`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ content }),
   });
   if (!response.ok) throw new Error(`Failed to update recipe notes: ${response.statusText}`);
