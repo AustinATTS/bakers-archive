@@ -35,3 +35,14 @@ class NoteUpdate(BaseModel):
 
 class RecipeTextUpdate(BaseModel):
     content: str = Field(..., description="Recipe text content")
+
+class LoginRequest(BaseModel):
+    username: str = Field(..., description="Username")
+    password: str = Field(..., description="Password")
+
+class Token(BaseModel):
+    access_token: str = Field(..., description="JWT access token")
+    token_type: str = Field(default="Bearer", description="Token type")
+
+class UserPublic(BaseModel):
+    username: str = Field(..., description="Username")
