@@ -12,19 +12,27 @@ import Typography from '@mui/material/Typography';
 import Drawer from '@mui/material/Drawer';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 import { RecipeMeta, listRecipes, searchRecipes, SearchParams } from '@/lib/api';
+import { useAuth } from '@/lib/AuthContext';
 import SearchBar from '@/components/SearchBar';
 import RecipeList from '@/components/RecipeList';
 import RecipeView from '@/components/RecipeView';
+import LoginDialog from '@/components/LoginDialog';
 
 const DRAWER_WIDTH = 340;
 
 export default function HomePage(): React.JSX.Element {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { user, logout } = useAuth();
+  const [loginOpen, setLoginOpen] = useState<boolean>(false);
 
   const [recipes, setRecipes] = useState<RecipeMeta[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -134,8 +142,32 @@ export default function HomePage(): React.JSX.Element {
           >
             🥖 Your artisan bread library 🥐
           </Typography>
+          <Box sx={{ flex: 1 }} />
+          {user ? (
+            <Tooltip title={`Signed in as ${user.username}`}>
+              <Button
+                color="inherit"
+                startIcon={<LogoutIcon />}
+                onClick={logout}
+                sx={{ color: 'rgba(255,255,255,0.9)', textTransform: 'none' }}
+              >
+                {user.username}
+              </Button>
+            </Tooltip>
+          ) : (
+            <Button
+              color="inherit"
+              startIcon={<LoginIcon />}
+              onClick={() => setLoginOpen(true)}
+              sx={{ color: 'rgba(255,255,255,0.9)', textTransform: 'none' }}
+            >
+              Sign In
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
+
+      <LoginDialog open={loginOpen} onClose={() => setLoginOpen(false)} />
 
       <Box sx={{ display: 'flex', flex: 1, mt: '64px', overflow: 'hidden' }}>
         {isMobile ? (
