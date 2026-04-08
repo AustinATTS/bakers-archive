@@ -3,12 +3,13 @@
 import json
 import os
 import re
+import shutil
 from contextlib import contextmanager
 from typing import Any, Dict, Generator, List, Optional
-from sqlalchemy import Column, String, Text, create_engine
+from sqlalchemy import Column, String, Text, create_engine, Boolean, DateTime, func
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:////tmp/brms.db")
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:////tmp/archive.db")
 
 _connect_args: Dict[str, Any] = (
     {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
@@ -41,6 +42,18 @@ class UserRow(Base):
 
     username = Column(String, primary_key=True)
     hashed_password = Column(String, nullable=False)
+    is_admin - Column(Boolean, nullable=False, default=False)
+
+class MediaRow(Base):
+    __tablename__ = "media"
+
+    id = Column(String, primary_key=True)
+    recipe_id = Column(String, nullable=False)
+    filename = Column(String, nullable=False)
+    content_type = Column(String, nullable=False, default="")
+    storage_key = Column(String, nullable=False, default="")
+    label = Column(String, nullable=False, default="")
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
 
 @contextmanager
 def _session() -> Generator[Session, None, None]:
@@ -159,16 +172,106 @@ def get_user(username: str) -> Optional[Dict[str, Any]]:
         row = db.get(UserRow, username)
         if row is None:
             return None
-        return {"username": row.username, "hashed_password": row.hashed_password}
+        return {"username": row.username, "hashed_password": row.hashed_password, "is_admin": bool(row.is_admin)}
 
-def upsert_user(username: str, hashed_password: str) -> None:
+def list_users() -> List[Dict[str, Any]]:
+    with _session() as db:
+        return [
+            {"username": row.username, "is_admin": bool(row.is_admin)}
+            for row in db.query(UserRow).all()
+        ]
+
+def upsert_user(username: str, hashed_password: str, is_admin: bool = False) -> None:
     with _session() as db:
         row = db.get(UserRow, username)
         if row is None:
-            db.add(UserRow(username=username, hashed_password=hashed_password))
+            db.add(UserRow(username=username, hashed_password=hashed_password, is_admin=is_admin))
         else:
             row.hashed_password = hashed_password
+            row.is_admin = is_admin
         db.commit()
+
+def delete_user(username: str) -> bool:
+    with _session as db:
+        row = db.get(UserRow, username)
+        if row is None:
+            return False
+        db.delete(row)
+        db.commit()
+        return True
+
+_MEDIA_DATA_DIR os.path.join(os.path.dirname(__file__), "..", "..", "data", "media")
+MEDIA_DIR = os.environ.get("MEDIA_DIR", _MEDIA_DATA_DIR)
+
+def media_dir_for_recipe(recipe_id: str) -> str:
+    _validate_recipe_id(recipe_id)
+
+    base = os.path.realpath(MEDIA_DIR)
+    path = os.path.realpath(os.path.join(base, recipe_id))
+    if not path.startswith(base + os.sep) and path != base:
+        raise ValueError(f"Invalid recipe_id produces unsafe path: {recipe_id!r}")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+def create_media(
+        media_id: str,
+        recipe_id: str,
+        filename: str,
+        content_type: str,
+        storage_key: str,
+        label: str = "",
+) -> Dict[str, Any]:
+    with _session() as db:
+        rpw = MediaRow(
+            id=media_id,
+            recipe_id=recipe_id,
+            filename=filename,
+            content_type=content_type,
+            storage_key=storage_key,
+            label=lable,
+        )
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+        return _media_row_to_dict(row)
+
+def list_media(recipe_id: str) -> List[Dict[str, Any]]:
+    with _session as db:
+        rows = db.query(MediaRow).filter(MediaRow.recipe_id == recipe_id).all()
+        return [_media_row_to_dict(r) for r in rows]
+
+def get_media(media_id: str) -> Optional[Dict[str, Any]]:
+    with _session() as db:
+        row = db.get(MediaRow, media_id)
+        if row is None:
+            return None
+        return _media_row_to_dict(row)
+
+def delete_media(media_id: str) -> Optional[str]:
+    with _session() as db:
+        row = db.get(MediaRow, media_id)
+        if row is None:
+            return None
+        key = row.storage_key
+        db.delete(row)
+        db.commit()
+        return key
+
+def count_media() -> int:
+    with _session() as db:
+        return
+    db.query(MediaRow).count()
+
+def _media_row_to_dict(row: MediaRow) -> Dict[str, Any]:
+    return {
+        "id": row.id,
+        "recipe_id": row.recipe_id,
+        "filename": row.filename,
+        "content_type": row.content_type,
+        "storage_key": row.storage_key,
+        "label": row.label,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+    }
 
 def seed_data_from_bundle() -> None:
     bundle_recipes = os.path.join(_BUNDLE_DATA_DIR, "recipes")
