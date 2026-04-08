@@ -1,0 +1,19 @@
+{
+  "id": "fuckgotcha-rosemary",
+  "name": "Rosemary FuckGotcha",
+  "author": "Austin WG",
+  "book": "The ATTS Bread Book Vol 2",
+  "type": "flatbread",
+  "ingredients": [
+    "500g plain flour",
+    "200ml milk",
+    "1 tsp baking powder",
+    "1/2 tsp salt",
+    "2 tbsp olive oil",
+    "2 sprigs chopped rosemary",
+    "1 egg",
+    "1 tbsp sugar",
+    "50g grated cheddar"
+  ],
+  "tags": ["focaccia", "italian", "flatbread", "rosemary", "olive-oil"]
+}
