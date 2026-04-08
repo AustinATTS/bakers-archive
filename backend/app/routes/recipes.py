@@ -3,10 +3,10 @@
 import os
 import re
 import uuid
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Query
+from typing import List, Optional, Any, Dict
+from fastapi import APIRouter, HTTPException, Query, Depends
 
-from app import models, storage
+from app import models, storage, auth
 
 router = APIRouter()
 
@@ -87,7 +87,11 @@ def get_recipe_notes(recipe_id: str) -> dict:
     return {"content": content}
 
 @router.put("/{recipe_id}/notes")
-def update_notes(recipe_id: str, note_update: models.NoteUpdate) -> dict:
+def update_notes(
+        recipe_id: str,
+        note_update: models.NoteUpdate,
+        _current_user: Dict[str, Any] = Depends(auth.get_current_user),
+) -> dict:
     _get_recipe_dir_safe(recipe_id)
     if not storage.recipe_exists(recipe_id):
         raise HTTPException(status_code=404, detail=f"Recipe '{recipe_id}' not found")
@@ -95,7 +99,11 @@ def update_notes(recipe_id: str, note_update: models.NoteUpdate) -> dict:
     return {"message": "Notes updated successfully"}
 
 @router.put("/{recipe_id}/recipe")
-def update_recipe_text(recipe_id: str, recipe_update: models.RecipeTextUpdate) -> dict:
+def update_recipe_text(
+        recipe_id: str,
+        recipe_update: models.RecipeTextUpdate,
+        _current_user: Dict[str, Any] = Depends(auth.get_current_user)
+) -> dict:
     _get_recipe_dir_safe(recipe_id)
     if not storage.recipe_exists(recipe_id):
         raise HTTPException(status_code=404, detail=f"Recipe '{recipe_id}' not found")
@@ -103,7 +111,10 @@ def update_recipe_text(recipe_id: str, recipe_update: models.RecipeTextUpdate) -
     return {"message": "Recipe updated successfully"}
 
 @router.post("", response_model=models.RecipeMeta, status_code=201)
-def create_recipe(recipe_create: models.RecipeCreate) -> models.RecipeMeta:
+def create_recipe(
+        recipe_create: models.RecipeCreate,
+        _current_user: Dict[str, Any] = Depends(auth.get_current_user),
+) -> models.RecipeMeta:
     recipe_id = _slugify(recipe_create.name) or str(uuid.uuid4())
     if storage.recipe_exists(recipe_id):
         recipe_id = f"{recipe_id}-{str(uuid.uuid4())[:8]}"
@@ -126,7 +137,10 @@ def create_recipe(recipe_create: models.RecipeCreate) -> models.RecipeMeta:
     return models.RecipeMeta(**meta_data)
 
 @router.delete("/{recipe_id}", status_code=204)
-def delete_recipe(recipe_id: str) -> None:
+def delete_recipe(
+        recipe_id: str,
+        _current_user: Dict[str, Any] = Depends(auth.get_current_user),
+) -> None:
     _get_recipe_dir_safe(recipe_id)
     if not storage.recipe_exists(recipe_id):
         raise HTTPException(status_code=404, detail=f"Recipe '{recipe_id}' not found")
