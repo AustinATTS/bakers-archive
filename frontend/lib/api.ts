@@ -4,7 +4,7 @@
 
 import { getToken } from './auth';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://bakers-archive-api.austinatts.co.uk/';
 
 export interface RecipeMeta {
   id: string;
