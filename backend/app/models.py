@@ -46,3 +46,23 @@ class Token(BaseModel):
 
 class UserPublic(BaseModel):
     username: str = Field(..., description="Username")
+    is_admin: bool = Field(default=False, description="Whether the user has admin privileges")
+
+class MediaItem(BaseModel):
+    id: str = Field(..., description="UUID of the media item")
+    recipe_id: str = Field(..., description="Owning recipe ID")
+    filename: str = Field(..., description="Original filename")
+    content_type: str = Field(default="", description="MIME type")
+    url: str = Field(..., description="URL to access the media file")
+    label: str = Field(default="", description="Optional human-readable label")
+    created_at: Optional[str] = Field(default=None, description="ISO8601 creation timestamp")
+
+class AdminUserCreate(BaseModel):
+    username: str = Field(..., description="Username")
+    password: str = Field(..., description="Plain-text password")
+    is_admin: bool = Field(default=False, description="Whether the new user is an admin")
+
+class AdminStats(BaseModel):
+    total_recipes: int = Field(..., description="Total number of recipes")
+    total_users: int = Field(..., description="Total number of users")
+    total_media: int = Field(..., description="Total number of media items")

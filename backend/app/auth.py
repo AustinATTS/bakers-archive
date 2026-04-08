@@ -31,8 +31,11 @@ bearer_scheme = HTTPBearer(auto_error=False)
 def ensure_admin_user() -> None:
     if not ADMIN_PASSWORD:
         return
-    if storage.get_user(ADMIN_USERNAME) is None:
-        storage.upsert_user(ADMIN_USERNAME, pwd_context.hash(ADMIN_PASSWORD))
+    existing = storage.get_user(ADMIN_USERNAME)
+    if existing is None:
+        storage.upsert_user(ADMIN_USERNAME, pwd_context.hash(ADMIN_PASSWORD), is_admin=True)
+    elif not existing.get("is_admin"):
+        storage.upsert_user(ADMIN_USERNAME, existing["hashed_password"], is_admin=True)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
@@ -81,3 +84,13 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
+def require_admin(
+        current_user: Dict[str, Any] = Depends(get_current_user),
+) -> Dict[str, Any]:
+    if not current_user.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return current_user

@@ -21,4 +21,4 @@ def login(login_request: models.LoginRequest) -> Dict[str, Any]:
 
 @router.get("/me", response_model=models.UserPublic)
 def get_me(current_user: Dict[str, Any] = Depends(auth.get_current_user)) -> Dict[str, Any]:
-    return {"username": current_user["username"]}
+    return {"username": current_user["username"], "is_admin": current_user.get("is_admin", False)}
