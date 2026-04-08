@@ -16,11 +16,43 @@ export interface RecipeMeta {
   tags: string[];
 }
 
+export interface RecipeCreatePayload {
+  name: string;
+  author: string;
+  book: string;
+  type: string;
+  ingredients: string[];
+  tags: string[];
+  recipe_text: string;
+  notes: string;
+}
+
 export interface SearchParams {
   query?: string;
   type?: string;
   author?: string;
   tags?: string;
+}
+
+export interface MediaItem {
+  id: string;
+  recipe_id: string;
+  filename: string;
+  content_type: string;
+  url: string;
+  label: string;
+  created_at: string | null;
+}
+
+export interface UserPublic {
+  username: string;
+  is_admin: boolean;
+}
+
+export interface AdminStats {
+  total_recipes: number;
+  total_users: number;
+  total_media: number;
 }
 
 function authHeaders(): Record<string, string> {
@@ -81,4 +113,95 @@ export async function updateRecipeNotes(recipeId: string, content: string): Prom
     body: JSON.stringify({ content }),
   });
   if (!response.ok) throw new Error(`Failed to update recipe notes: ${response.statusText}`);
+}
+
+export async function createRecipe(payload: RecipeCreatePayload): Promise<RecipeMeta> {
+  const res = await fetch(`${API_URL}/recipes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(err.detail ?? `Failed to create recipe: ${res.statusText}`);
+  }
+  return res.json() as Promise<RecipeMeta>;
+}
+
+export async function deleteRecipe(recipeId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/recipes/${encodeURIComponent(recipeId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to delete recipe: ${res.statusText}`);
+}
+
+export async function listMedia(recipeId: string): Promise<MediaItem[]> {
+  const res = await fetch(`${API_URL}/recipes/${encodeURIComponent(recipeId)}/media`);
+  if (!res.ok) throw new Error(`Failed to list media: ${res.statusText}`);
+  return res.json() as Promise<MediaItem[]>;
+}
+
+export async function uploadMedia(recipeId: string, file: File, label?: string): Promise<MediaItem> {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (label) formData.append('label', label);
+  const res = await fetch(`${API_URL}/recipes/${encodeURIComponent(recipeId)}/media`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(err.detail ?? `Failed to upload media: ${res.statusText}`);
+  }
+  return res.json() as Promise<MediaItem>;
+}
+
+export async function deleteMedia(recipeId: string, mediaId: string): Promise<void> {
+  const res = await fetch(
+    `${API_URL}/recipes/${encodeURIComponent(recipeId)}/media/${encodeURIComponent(mediaId)}`,
+    { method: 'DELETE', headers: authHeaders() },
+  );
+  if (!res.ok) throw new Error(`Failed to delete media: ${res.statusText}`);
+}
+
+export async function adminListUsers(): Promise<UserPublic[]> {
+  const res = await fetch(`${API_URL}/admin/users`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Failed to list users: ${res.statusText}`);
+  return res.json() as Promise<UserPublic[]>;
+}
+
+export async function adminCreateUser(
+  username: string,
+  password: string,
+  is_admin: boolean,
+): Promise<UserPublic> {
+  const res = await fetch(`${API_URL}/admin/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ username, password, is_admin }),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(err.detail ?? `Failed to create user: ${res.statusText}`);
+  }
+  return res.json() as Promise<UserPublic>;
+}
+
+export async function adminDeleteUser(username: string): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/users/${encodeURIComponent(username)}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(err.detail ?? `Failed to delete user: ${res.statusText}`);
+  }
+}
+
+export async function adminGetStats(): Promise<AdminStats> {
+  const res = await fetch(`${API_URL}/admin/stats`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Failed to get stats: ${res.statusText}`);
+  return res.json() as Promise<AdminStats>;
 }

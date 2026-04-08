@@ -8,6 +8,7 @@ const TOKEN_KEY = 'bakers_token';
 
 export interface AuthUser {
   username: string;
+  is_admin: boolean;
 }
 
 export function getToken(): string | null {
