@@ -8,6 +8,8 @@ from typing import AsyncGenerator
 
 from app.routes import recipes
 from app.routes import auth as auth_routes
+from app.routes import media as media_routes
+from app.routes import admin as admin_routes
 from app import auth, storage
 
 ALLOWED_ORIGINS_RAW = os.environ.get(
@@ -40,6 +42,9 @@ app.add_middleware(
 
 app.include_router(auth_routes.router, prefix="/auth", tags=["auth"])
 app.include_router(recipes.router, prefix="/recipes", tags=["recipes"])
+app.include_router(media_routes.router, prefix="/recipes", tags=["media"])
+app.include_router(media_routes.media_file_router, prefix="/media", tags=["media"])
+app.include_router(admin_routes.router, prefix="/admin", tags=["admin"])
 
 @app.get("/")
 def root():

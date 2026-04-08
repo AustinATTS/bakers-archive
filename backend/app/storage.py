@@ -200,7 +200,7 @@ def delete_user(username: str) -> bool:
         db.commit()
         return True
 
-_MEDIA_DATA_DIR os.path.join(os.path.dirname(__file__), "..", "..", "data", "media")
+_MEDIA_DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data", "media")
 MEDIA_DIR = os.environ.get("MEDIA_DIR", _MEDIA_DATA_DIR)
 
 def media_dir_for_recipe(recipe_id: str) -> str:
