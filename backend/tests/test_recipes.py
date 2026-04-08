@@ -8,6 +8,8 @@ from fastapi.testclient import TestClient
 
 TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "test_data_tmp")
 os.environ["DATA_DIR"] = TEST_DATA_DIR
+os.environ["ADMIN_USERNAME"] = "testadmin"
+os.environ["ADMIN_PASSWORD"] = "testpass"
 
 from app.main import app
 from app import storage
@@ -23,14 +25,24 @@ def clean_test_data() -> Generator:
     if os.path.exists(TEST_DATA_DIR):
         shutil.rmtree(TEST_DATA_DIR)
 
-
 @pytest.fixture
 def client() -> TestClient:
     return TestClient(app)
 
+@pytest.fixture
+def auth_headers(client: TestClient) -> dict:
+    # Trigger startup event to create the admin user
+    with client:
+        response = client.post(
+            "/auth/login",
+            json={"username": "testadmin", "password": "testpass"},
+        )
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
 
 @pytest.fixture
-def sample_recipe(client: TestClient) -> dict:
+def sample_recipe(client: TestClient, auth_headers: dict) -> dict:
     payload = {
         "name": "Test Sourdough",
         "author": "Test Baker",
@@ -41,10 +53,9 @@ def sample_recipe(client: TestClient) -> dict:
         "recipe_text": "Mix ingredients and bake.",
         "notes": "Great recipe!",
     }
-    response = client.post("/recipes", json=payload)
+    response = client.post("/recipes", json=payload, headers=auth_headers)
     assert response.status_code == 201
     return response.json()
-
 
 class TestListRecipes:
     def test_list_empty(self, client: TestClient) -> None:
@@ -75,7 +86,7 @@ class TestGetRecipe:
 
 
 class TestCreateRecipe:
-    def test_create_basic(self, client: TestClient) -> None:
+    def test_create_basic(self, client: TestClient, auth_headers: dict) -> None:
         payload = {
             "name": "Rye Bread",
             "author": "Baker Joe",
@@ -83,14 +94,14 @@ class TestCreateRecipe:
             "ingredients": ["rye flour", "water", "salt"],
             "tags": ["rye"],
         }
-        response = client.post("/recipes", json=payload)
+        response = client.post("/recipes", json=payload, headers=auth_headers)
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "Rye Bread"
         assert data["type"] == "rye"
         assert "id" in data
 
-    def test_create_generates_slug_id(self, client: TestClient) -> None:
+    def test_create_generates_slug_id(self, client: TestClient, auth_headers: dict) -> None:
         payload = {
             "name": "My Special Loaf",
             "author": "Baker",
@@ -98,23 +109,38 @@ class TestCreateRecipe:
             "ingredients": [],
             "tags": [],
         }
-        response = client.post("/recipes", json=payload)
+        response = client.post("/recipes", json=payload, headers=auth_headers)
         assert response.status_code == 201
         data = response.json()
         assert "my-special-loaf" in data["id"]
 
+    def test_create_requires_auth(self, client: TestClient) -> None:
+        payload = {
+            "name": "Unauthorized Bread",
+            "author": "Baker",
+            "type": "white",
+            "ingredients": [],
+            "tags": [],
+        }
+        response = client.post("/recipes", json=payload)
+        assert response.status_code == 401
 
 class TestDeleteRecipe:
-    def test_delete_existing(self, client: TestClient, sample_recipe: dict) -> None:
+    def test_delete_existing(self, client: TestClient, sample_recipe: dict, auth_headers: dict) -> None:
         recipe_id = sample_recipe["id"]
-        response = client.delete(f"/recipes/{recipe_id}")
+        response = client.delete(f"/recipes/{recipe_id}", headers=auth_headers)
         assert response.status_code == 204
         get_response = client.get(f"/recipes/{recipe_id}")
         assert get_response.status_code == 404
 
-    def test_delete_not_found(self, client: TestClient) -> None:
-        response = client.delete("/recipes/does-not-exist")
+    def test_delete_not_found(self, client: TestClient, auth_headers: dict) -> None:
+        response = client.delete("/recipes/does-not-exist", headers=auth_headers)
         assert response.status_code == 404
+
+    def test_delete_requires_auth(self, client: TestClient, sample_recipe: dict) -> None:
+        recipe_id = sample_recipe["id"]
+        response = client.delete(f"/recipes/{recipe_id}")
+        assert response.status_code == 401
 
 
 class TestRecipeText:
@@ -124,11 +150,12 @@ class TestRecipeText:
         assert response.status_code == 200
         assert response.json()["content"] == "Mix ingredients and bake."
 
-    def test_update_recipe_text(self, client: TestClient, sample_recipe: dict) -> None:
+    def test_update_recipe_text(self, client: TestClient, sample_recipe: dict, auth_headers: dict) -> None:
         recipe_id = sample_recipe["id"]
         response = client.put(
             f"/recipes/{recipe_id}/recipe",
             json={"content": "New instructions."},
+            headers=auth_headers,
         )
         assert response.status_code == 200
         get_response = client.get(f"/recipes/{recipe_id}/recipe")
@@ -146,11 +173,12 @@ class TestNotes:
         assert response.status_code == 200
         assert response.json()["content"] == "Great recipe!"
 
-    def test_update_notes(self, client: TestClient, sample_recipe: dict) -> None:
+    def test_update_notes(self, client: TestClient, sample_recipe: dict, auth_headers: dict) -> None:
         recipe_id = sample_recipe["id"]
         response = client.put(
             f"/recipes/{recipe_id}/notes",
             json={"content": "Updated notes."},
+            headers=auth_headers,
         )
         assert response.status_code == 200
         get_response = client.get(f"/recipes/{recipe_id}/notes")
