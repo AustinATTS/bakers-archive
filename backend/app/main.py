@@ -12,7 +12,7 @@ from app import auth, storage
 
 ALLOWED_ORIGINS_RAW = os.environ.get(
     "ALLOWED_ORIGINS",
-    "http://localhost:3000,http://frontend:3000",
+    "http://localhost:3000,http://frontend:3000,https://archive.austinatts.co.uk",
 )
 _ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS_RAW.split(",") if o.strip()]
 
