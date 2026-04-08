@@ -7,6 +7,10 @@ services:
       - ./data:/app/data
     environment:
       - DATA_DIR=/app/data
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - ALLOWED_ORIGINS=http://localhost:3000,http://frontend:3000
 
   frontend:
     build: ./frontend
