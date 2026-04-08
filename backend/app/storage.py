@@ -54,6 +54,7 @@ def init_db() -> None:
     Base.metadata.create_all(bind=engine)
 
 def ensure_recipes_dir() -> None:
+    """..."""
 
 def _validate_recipe_id(recipe_id: str) -> None:
     if not recipe_id or not _SAFE_ID_RE.match(recipe_id):

@@ -8,7 +8,7 @@ from typing import AsyncGenerator
 
 from app.routes import recipes
 from app.routes import auth as auth_routes
-from app import auth
+from app import auth, storage
 
 ALLOWED_ORIGINS_RAW = os.environ.get(
     "ALLOWED_ORIGINS",
@@ -18,6 +18,8 @@ _ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS_RAW.split(",") if o.strip
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
+    storage.init_db()
+    storage.seed_data_from_bundle()
     auth.ensure_admin_user()
     yield
 
