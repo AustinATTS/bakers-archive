@@ -28,39 +28,17 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer_scheme = HTTPBearer(auto_error=False)
 
-def _users_path() -> str:
-    storage.ensure_recipes_dir()
-    return os.path.join(storage.DATA_DIR, "users.json")
-
-def _load_users() -> Dict[str, Any]:
-    path = _users_path()
-    if not os.path.isfile(path):
-        return {}
-    with open(path, "r", encoding="utf-8") as file:
-        return json.load(file)
-
-def _save_users(users: Dict[str, Any]) -> None:
-    path = _users_path()
-    with open(path, "w", encoding="utf-8") as file:
-        json.dump(users, file, indent=2, ensure_ascii=False)
-
 def ensure_admin_user() -> None:
     if not ADMIN_PASSWORD:
         return
-    users = _load_users()
-    if ADMIN_USERNAME not in users:
-        users[ADMIN_USERNAME] = {
-            "username": ADMIN_USERNAME,
-            "password": pwd_context.hash(ADMIN_PASSWORD),
-        }
-        _save_users(users)
+    if storage.get_user(ADMIN_USERNAME) is None:
+        storage.upsert_user(ADMIN_USERNAME, pwd_context.hash(ADMIN_PASSWORD))
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 def authenticate_user(username: str, password: str) -> Optional[Dict[str, Any]]:
-    users = _load_users()
-    user = users.get(username)
+    user = storage.get_user(username)
     if not user:
         return None
     if not verify_password(password, user["hashed_password"]):
@@ -74,7 +52,7 @@ def create_access_token(data: Dict[str, Any]) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def get_current_user(
-        credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
 ) -> Dict[str, Any]:
     if credentials is None:
         raise HTTPException(
@@ -95,8 +73,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
 
-    users = _load_users()
-    user = users.get(username)
+    user = storage.get_user(username)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
