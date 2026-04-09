@@ -42,7 +42,7 @@ class UserRow(Base):
 
     username = Column(String, primary_key=True)
     hashed_password = Column(String, nullable=False)
-    is_admin - Column(Boolean, nullable=False, default=False)
+    is_admin = Column(Boolean, nullable=False, default=False)
 
 class MediaRow(Base):
     __tablename__ = "media"
