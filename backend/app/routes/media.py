@@ -128,4 +128,10 @@ def serve_media_file(recipe_id: str, filename: str) -> FileResponse:
     if not os.path.isfile(resolved):
         raise HTTPException(status_code=404, detail="Media file not found")
 
-    return FileResponse(resolved)
+    response = FileResponse(resolved)
+
+    response.headers["Access-Control-Allow-Origin"] = "https://archive.austinatts.co.uk"
+    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+
+    return response
