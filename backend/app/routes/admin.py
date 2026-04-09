@@ -50,7 +50,7 @@ def get_stats(
 ) -> models.AdminStats:
     recipe_count = len(storage.list_recipe_ids())
     user_count = len(storage.list_users())
-    media_count = storage.count_media()
+    media_count = storage.count_media() or 0
     return models.AdminStats(
         total_recipes=recipe_count,
         total_users=user_count,
