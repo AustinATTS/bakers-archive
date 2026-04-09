@@ -236,7 +236,7 @@ def create_media(
         return _media_row_to_dict(row)
 
 def list_media(recipe_id: str) -> List[Dict[str, Any]]:
-    with _session as db:
+    with _session() as db:
         rows = db.query(MediaRow).filter(MediaRow.recipe_id == recipe_id).all()
         return [_media_row_to_dict(r) for r in rows]
 
