@@ -222,13 +222,13 @@ def create_media(
         label: str = "",
 ) -> Dict[str, Any]:
     with _session() as db:
-        rpw = MediaRow(
+        row = MediaRow(
             id=media_id,
             recipe_id=recipe_id,
             filename=filename,
             content_type=content_type,
             storage_key=storage_key,
-            label=lable,
+            label=label,
         )
         db.add(row)
         db.commit()
