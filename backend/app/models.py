@@ -70,5 +70,23 @@ class AdminStats(BaseModel):
     db_size_bytes: int = Field(default=0, description="Approximate database size in bytes")
     blob_enabled: bool = Field(default=False, description="Whether Vercel Blob storage is configured")
     blob_item_count: int = Field(default=0, description="Number of media items stored in Vercel Blob")
+    blob_storage_used_bytes: int = Field(default=0, description="Total bytes used in Vercel Blob storage")
+    blob_storage_limit_bytes: int = Field(default=0, description="Vercel Blob storage limit in bytes")
+    blob_storage_usage_percent: float = Field(default=0.0, description="Percentage of Blob storage used")
+    media_storage_used_bytes: int = Field(default=0, description="Total bytes used by local media files")
     vercel_api_url: str = Field(default="", description="Vercel API project URL if configured")
     vercel_frontend_url: str = Field(default="", description="Vercel frontend project URL if configured")
+    vercel_deployment: Optional["VercelDeploymentInfo"] = Field(default=None,
+                                                                description="Current Vercel deployment info")
+
+class VercelDeploymentInfo(BaseModel):
+    url: str = Field(default="", description="Deployment URL")
+    environment: str = Field(default="", description="Deployment environment (production/preview/development)")
+    region: str = Field(default="", description="Deployment region")
+    git_commit_sha: str = Field(default="", description="Git commit SHA")
+    git_commit_message: str = Field(default="", description="Git commit message")
+    git_commit_author: str = Field(default="", description="Git commit author")
+    git_commit_ref: str = Field(default="", description="Git branch name")
+    git_repo: str = Field(default="", description="Git repository slug (owner/repo)")
+
+AdminStats.model_rebuild()

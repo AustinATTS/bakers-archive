@@ -8,6 +8,9 @@ from contextlib import contextmanager
 from typing import Any, Dict, Generator, List, Optional
 from sqlalchemy import Column, String, Text, create_engine, Boolean, DateTime, func
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+import logging
+
+logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:////tmp/archive.db")
 
@@ -296,6 +299,17 @@ def get_db_type() -> str:
         return "postgresql"
     return "unknown"
 
+def get_media_storage_size_bytes() -> int:
+    if not os.path.isdir(MEDIA_DIR):
+        return 0
+    total = 0
+    for dirpath, _dirnames, filenames in os.walk(MEDIA_DIR):
+        for fname in filenames:
+            try:
+                total += os.path.getsize(os.path.join(dirpath, fname))
+            except OSError:
+                logger.debug("Could not read size of %s/%s", dirpath, fname)
+    return total
 
 def _media_row_to_dict(row: MediaRow) -> Dict[str, Any]:
     return {

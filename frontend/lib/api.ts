@@ -53,6 +53,12 @@ export interface AdminStats {
   total_recipes: number;
   total_users: number;
   total_media: number;
+  db_type: string;
+  db_size_bytes: number;
+  blob_enabled: boolean;
+  blob_item_count: number;
+  vercel_api_url: string;
+  vercel_frontend_url: string;
 }
 
 function authHeaders(): Record<string, string> {
@@ -134,6 +140,28 @@ export async function deleteRecipe(recipeId: string): Promise<void> {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error(`Failed to delete recipe: ${res.statusText}`);
+}
+
+export interface RecipeUpdatePayload {
+  name?: string;
+  author?: string;
+  book?: string;
+  type?: string;
+  ingredients?: string[];
+  tags?: string[];
+}
+
+export async function updateRecipeMeta(recipeId: string, payload: RecipeUpdatePayload): Promise<RecipeMeta> {
+  const res = await fetch(`${API_URL}/recipes/${encodeURIComponent(recipeId)}/meta`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(err.detail ?? `Failed to update recipe: ${res.statusText}`);
+  }
+  return res.json() as Promise<RecipeMeta>;
 }
 
 export async function listMedia(recipeId: string): Promise<MediaItem[]> {
