@@ -1,5 +1,6 @@
 # Media upload/management routes for The Baker's Archive.
 
+import logging
 import os
 import uuid
 from typing import Any, Dict, List
@@ -7,6 +8,9 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from app import auth, models, storage
+from app.blob_storage import delete_file, is_blob_enabled, store_file
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -20,17 +24,23 @@ def _allowed_content_type(ct: str) -> bool:
 def _safe_filename(filename: str) -> str:
     return os.path.basename(filename).replace("..", "").strip() or "upload"
 
+def _media_url(item: Dict[str, Any]) -> str:
+    key = item.get("storage_key", "")
+    if key.startswith("https://"):
+        return key
+    api_url = os.environ.get("NEXT_PUBLIC_API_URL", "").rstrip("/")
+    return f"{api_url}/media/{item['recipe_id']}/{item['filename']}"
+
 @router.get("/{recipe_id}/media", response_model=List[models.MediaItem])
 def list_media(recipe_id: str) -> List[models.MediaItem]:
     storage.validate_recipe_id(recipe_id)
     if not storage.recipe_exists(recipe_id):
         raise HTTPException(status_code=404, detail=f"Recipe '{recipe_id}' not found")
     items = storage.list_media(recipe_id)
-    api_url = os.environ.get("NEXT_PUBLIC_API_URL", "").rstrip("/")
     return [
         models.MediaItem(
             **{k: v for k, v in item.items() if k != "storage_key"},
-            url=f"{api_url}/media/{recipe_id}/{item['filename']}",
+            url=_media_url(item),
         )
         for item in items
     ]
@@ -64,32 +74,55 @@ async def upload_media(
     safe_name = _safe_filename(file.filename or "upload")
     media_id = str(uuid.uuid4())
     stored_name = f"{media_id}_{safe_name}"
-    dest_dir = storage.media_dir_for_recipe(recipe_id)
 
-    dest_path = os.path.realpath(os.path.join(dest_dir, stored_name))
-    if not dest_path.startswith(os.path.realpath(dest_dir) + os.sep):
-        raise HTTPException(status_code=400, detail="Invalid file path.")
+    if is_blob_enabled():
+        blob_path = f"recipes/{recipe_id}/{stored_name}"
+        try:
+            blob_url = await store_file(blob_path, data, content_type)
+        except RuntimeError as exc:
+            logger.error("Vercel Blob upload failed: %s", exc)
+            raise HTTPException(
+                status_code=502,
+                detail="Failed to upload file to storage. Please try again later.",
+            )
 
-    with open(dest_path, "wb") as fh:
-        fh.write(data)
+        item = storage.create_media(
+            media_id=media_id,
+            recipe_id=recipe_id,
+            filename=stored_name,
+            content_type=content_type,
+            storage_key=blob_url,
+            label=label,
+        )
+        url = blob_url
+    else:
+        dest_dir = storage.media_dir_for_recipe(recipe_id)
+        dest_path = os.path.realpath(os.path.join(dest_dir, stored_name))
+        if not dest_path.startswith(os.path.realpath(dest_dir) + os.sep):
+            raise HTTPException(status_code=400, detail="Invalid file path.")
 
-    item = storage.create_media(
-        media_id=media_id,
-        recipe_id=recipe_id,
-        filename=stored_name,
-        content_type=content_type,
-        storage_key=dest_path,
-        label=label,
-    )
+        with open(dest_path, "wb") as fh:
+            fh.write(data)
 
-    api_url = os.environ.get("NEXT_PUBLIC_API_URL", "").rstrip("/")
+        item = storage.create_media(
+            media_id=media_id,
+            recipe_id=recipe_id,
+            filename=stored_name,
+            content_type=content_type,
+            storage_key=dest_path,
+            label=label,
+        )
+        api_url = os.environ.get("NEXT_PUBLIC_API_URL", "").rstrip("/")
+        url = f"{api_url}/media/{recipe_id}/{stored_name}"
+
     return models.MediaItem(
         **{k: v for k, v in item.items() if k != "storage_key"},
-        url=f"{api_url}/media/{recipe_id}/{stored_name}",
+        url=url,
     )
 
+
 @router.delete("/{recipe_id}/media/{media_id}", status_code=204)
-def delete_media(
+async def delete_media(
     recipe_id: str,
     media_id: str,
     _current_user: Dict[str, Any] = Depends(auth.get_current_user),
@@ -102,12 +135,21 @@ def delete_media(
     if storage_key is None:
         raise HTTPException(status_code=404, detail=f"Media item '{media_id}' not found")
 
-    if storage_key and os.path.isfile(storage_key):
+    if storage_key and storage_key.startswith("https://"):
+        try:
+            await delete_file(storage_key)
+        except RuntimeError:
+            logger.warning(
+                "Failed to delete blob %s for media %s; DB row already removed.",
+                storage_key,
+                media_id,
+                exc_info=True,
+            )
+    elif storage_key and os.path.isfile(storage_key):
         try:
             os.remove(storage_key)
         except OSError:
             pass
-
 
 media_file_router = APIRouter()
 
@@ -128,10 +170,4 @@ def serve_media_file(recipe_id: str, filename: str) -> FileResponse:
     if not os.path.isfile(resolved):
         raise HTTPException(status_code=404, detail="Media file not found")
 
-    response = FileResponse(resolved)
-
-    response.headers["Access-Control-Allow-Origin"] = "https://archive.austinatts.co.uk"
-    response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-
-    return response
+    return FileResponse(resolved)
