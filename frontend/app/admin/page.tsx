@@ -35,20 +35,19 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Snackbar from '@mui/material/Snackbar';
+import Tooltip from '@mui/material/Tooltip';
+import LinearProgress from '@mui/material/LinearProgress';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PeopleIcon from '@mui/icons-material/People';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
-import Tooltip from '@mui/material/Tooltip';
-import LinearProgress from '@mui/material/LinearProgress';
-import EditIcon from '@mui/icons-material/Edit';
 import StorageIcon from '@mui/icons-material/Storage';
 import CloudIcon from '@mui/icons-material/Cloud';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import LinkIcon from '@mui/icons-material/Link';
 
 import { useAuth } from '@/lib/AuthContext';
 import {
@@ -284,7 +283,7 @@ export default function AdminPage(): React.JSX.Element {
           <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
             <Tabs value={tab} onChange={(_, v: number) => setTab(v)} textColor="primary" indicatorColor="primary">
               <Tab label="👥 Users" />
-               <Tab label="🍞 Recipes" />
+              <Tab label="🍞 Recipes" />
               <Tab label="📊 Statistics" />
             </Tabs>
           </Box>
@@ -544,11 +543,28 @@ export default function AdminPage(): React.JSX.Element {
                           {stats.blob_enabled ? (
                             <>
                               <Typography variant="h4" color="success.main" fontWeight={700} sx={{ mb: 0.5 }}>
-                                {stats.blob_item_count}
+                                {formatBytes(stats.blob_storage_used_bytes)}
                               </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Files stored in Vercel Blob
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                {stats.blob_item_count} file{stats.blob_item_count !== 1 ? 's' : ''} stored in Vercel Blob
                               </Typography>
+                              <Box sx={{ mt: 1 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                  <Typography variant="caption" color="text.secondary">Storage Usage</Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {formatBytes(stats.blob_storage_used_bytes)} / {formatBytes(stats.blob_storage_limit_bytes)}
+                                  </Typography>
+                                </Box>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={Math.min(stats.blob_storage_usage_percent, 100)}
+                                  color={stats.blob_storage_usage_percent > 80 ? 'warning' : 'success'}
+                                  sx={{ borderRadius: 1, height: 6 }}
+                                />
+                                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                  {stats.blob_storage_usage_percent.toFixed(1)}% used
+                                </Typography>
+                              </Box>
                             </>
                           ) : (
                             <>
@@ -560,85 +576,199 @@ export default function AdminPage(): React.JSX.Element {
                               </Typography>
                             </>
                           )}
+                          {!stats.blob_enabled && stats.media_storage_used_bytes > 0 && (
+                            <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                              <Typography variant="caption" color="text.secondary">
+                                Local media storage: {formatBytes(stats.media_storage_used_bytes)}
+                              </Typography>
+                            </Box>
+                          )}
                         </CardContent>
                       </Card>
                     </Grid>
                   </Grid>
 
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
-                    Vercel Analytics &amp; Deployments
+                    Vercel Deployment
                   </Typography>
-                  <Grid container spacing={3}>
-                    <Grid size={{xs: 12, sm: 6}}>
-                      <Card elevation={0} sx={{ border: 1, borderColor: 'divider' }}>
-                        <CardContent>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                            <AnalyticsIcon sx={{ fontSize: 32, color: 'primary.main' }} />
-                            <Box>
-                              <Typography variant="subtitle1" fontWeight={600}>
-                                API Backend
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                FastAPI on Vercel Serverless Functions
-                              </Typography>
+                  <Grid container spacing={3} sx={{ mb: 4 }}>
+                    {stats.vercel_deployment ? (
+                      <>
+                        <Grid size={{xs: 12}}>
+                          <Card elevation={0} sx={{ border: 1, borderColor: 'divider' }}>
+                            <CardContent>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                                <AnalyticsIcon sx={{ fontSize: 32, color: 'primary.main' }} />
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography variant="subtitle1" fontWeight={600}>
+                                    Current Deployment
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Running on Vercel Serverless Functions
+                                  </Typography>
+                                </Box>
+                                <Chip
+                                  label={stats.vercel_deployment.environment || 'unknown'}
+                                  size="small"
+                                  color={stats.vercel_deployment.environment === 'production' ? 'success' : 'warning'}
+                                  sx={{ textTransform: 'capitalize' }}
+                                />
+                              </Box>
+
+                              <TableContainer sx={{ mb: 2 }}>
+                                <Table size="small">
+                                  <TableBody>
+                                    {stats.vercel_deployment.url && (
+                                      <TableRow>
+                                        <TableCell sx={{ fontWeight: 600, width: 160, border: 0, py: 0.75 }}>URL</TableCell>
+                                        <TableCell sx={{ border: 0, py: 0.75 }}>
+                                          <a
+                                            href={stats.vercel_deployment.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ color: 'inherit' }}
+                                          >
+                                            {stats.vercel_deployment.url}
+                                          </a>
+                                        </TableCell>
+                                      </TableRow>
+                                    )}
+                                    {stats.vercel_deployment.region && (
+                                      <TableRow>
+                                        <TableCell sx={{ fontWeight: 600, border: 0, py: 0.75 }}>Region</TableCell>
+                                        <TableCell sx={{ border: 0, py: 0.75 }}>{stats.vercel_deployment.region}</TableCell>
+                                      </TableRow>
+                                    )}
+                                    {stats.vercel_deployment.git_commit_sha && (
+                                      <TableRow>
+                                        <TableCell sx={{ fontWeight: 600, border: 0, py: 0.75 }}>Commit</TableCell>
+                                        <TableCell sx={{ border: 0, py: 0.75 }}>
+                                          <Box component="span" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                                            {stats.vercel_deployment.git_commit_sha.slice(0, 7)}
+                                          </Box>
+                                          {stats.vercel_deployment.git_commit_message && (
+                                            <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                              {stats.vercel_deployment.git_commit_message.length > 80
+                                                ? stats.vercel_deployment.git_commit_message.slice(0, 80) + '…'
+                                                : stats.vercel_deployment.git_commit_message}
+                                            </Typography>
+                                          )}
+                                        </TableCell>
+                                      </TableRow>
+                                    )}
+                                    {stats.vercel_deployment.git_commit_author && (
+                                      <TableRow>
+                                        <TableCell sx={{ fontWeight: 600, border: 0, py: 0.75 }}>Author</TableCell>
+                                        <TableCell sx={{ border: 0, py: 0.75 }}>{stats.vercel_deployment.git_commit_author}</TableCell>
+                                      </TableRow>
+                                    )}
+                                    {stats.vercel_deployment.git_commit_ref && (
+                                      <TableRow>
+                                        <TableCell sx={{ fontWeight: 600, border: 0, py: 0.75 }}>Branch</TableCell>
+                                        <TableCell sx={{ border: 0, py: 0.75 }}>
+                                          <Chip label={stats.vercel_deployment.git_commit_ref} size="small" variant="outlined" />
+                                        </TableCell>
+                                      </TableRow>
+                                    )}
+                                    {stats.vercel_deployment.git_repo && (
+                                      <TableRow>
+                                        <TableCell sx={{ fontWeight: 600, border: 0, py: 0.75 }}>Repository</TableCell>
+                                        <TableCell sx={{ border: 0, py: 0.75 }}>{stats.vercel_deployment.git_repo}</TableCell>
+                                      </TableRow>
+                                    )}
+                                  </TableBody>
+                                </Table>
+                              </TableContainer>
+
+                              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                {stats.vercel_api_url && (
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<OpenInNewIcon />}
+                                    href={stats.vercel_api_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    API Dashboard
+                                  </Button>
+                                )}
+                                {stats.vercel_frontend_url && (
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<OpenInNewIcon />}
+                                    href={stats.vercel_frontend_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    Frontend Dashboard
+                                  </Button>
+                                )}
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      </>
+                    ) : (
+                      <Grid size={{xs: 12}}>
+                        <Card elevation={0} sx={{ border: 1, borderColor: 'divider' }}>
+                          <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                              <AnalyticsIcon sx={{ fontSize: 32, color: 'text.disabled' }} />
+                              <Box>
+                                <Typography variant="subtitle1" fontWeight={600}>
+                                  Local Development
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Not running on Vercel — deployment info unavailable
+                                </Typography>
+                              </Box>
                             </Box>
-                          </Box>
-                          {stats.vercel_api_url ? (
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              startIcon={<OpenInNewIcon />}
-                              href={stats.vercel_api_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              sx={{ mr: 1, mb: 1 }}
-                            >
-                              Open Dashboard
-                            </Button>
-                          ) : (
                             <Typography variant="body2" color="text.secondary">
-                              Set VERCEL_API_PROJECT_URL env var to link to the Vercel project dashboard
-                              for API analytics (requests, function invocations, bandwidth).
+                              Deploy to Vercel to see deployment statistics such as commit info, region, environment, and more.
+                              {!stats.vercel_api_url && !stats.vercel_frontend_url && (
+                                <> Set <code>VERCEL_API_PROJECT_URL</code> and <code>VERCEL_FRONTEND_PROJECT_URL</code> to add quick links to the Vercel project dashboards.</>
+                              )}
+                              {stats.vercel_api_url && !stats.vercel_frontend_url && (
+                                <> Set <code>VERCEL_FRONTEND_PROJECT_URL</code> to add a quick link to the frontend Vercel dashboard.</>
+                              )}
+                              {!stats.vercel_api_url && stats.vercel_frontend_url && (
+                                <> Set <code>VERCEL_API_PROJECT_URL</code> to add a quick link to the API Vercel dashboard.</>
+                              )}
                             </Typography>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                    <Grid size={{xs: 12, sm: 6}}>
-                      <Card elevation={0} sx={{ border: 1, borderColor: 'divider' }}>
-                        <CardContent>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                            <LinkIcon sx={{ fontSize: 32, color: 'primary.main' }} />
-                            <Box>
-                              <Typography variant="subtitle1" fontWeight={600}>
-                                Frontend
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                Next.js on Vercel Edge Network
-                              </Typography>
-                            </Box>
-                          </Box>
-                          {stats.vercel_frontend_url ? (
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              startIcon={<OpenInNewIcon />}
-                              href={stats.vercel_frontend_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              sx={{ mr: 1, mb: 1 }}
-                            >
-                              Open Dashboard
-                            </Button>
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">
-                              Set VERCEL_FRONTEND_PROJECT_URL env var to link to the Vercel project dashboard
-                              for frontend analytics (page views, web vitals, bandwidth).
-                            </Typography>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </Grid>
+                            {(stats.vercel_api_url || stats.vercel_frontend_url) && (
+                              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
+                                {stats.vercel_api_url && (
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<OpenInNewIcon />}
+                                    href={stats.vercel_api_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    API Dashboard
+                                  </Button>
+                                )}
+                                {stats.vercel_frontend_url && (
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<OpenInNewIcon />}
+                                    href={stats.vercel_frontend_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    Frontend Dashboard
+                                  </Button>
+                                )}
+                              </Box>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    )}
                   </Grid>
                 </>
               ) : null}

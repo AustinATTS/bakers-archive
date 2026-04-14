@@ -49,6 +49,17 @@ export interface UserPublic {
   is_admin: boolean;
 }
 
+export interface VercelDeploymentInfo {
+  url: string;
+  environment: string;
+  region: string;
+  git_commit_sha: string;
+  git_commit_message: string;
+  git_commit_author: string;
+  git_commit_ref: string;
+  git_repo: string;
+}
+
 export interface AdminStats {
   total_recipes: number;
   total_users: number;
@@ -57,8 +68,13 @@ export interface AdminStats {
   db_size_bytes: number;
   blob_enabled: boolean;
   blob_item_count: number;
+  blob_storage_used_bytes: number;
+  blob_storage_limit_bytes: number;
+  blob_storage_usage_percent: number;
+  media_storage_used_bytes: number;
   vercel_api_url: string;
   vercel_frontend_url: string;
+  vercel_deployment: VercelDeploymentInfo | null;
 }
 
 function authHeaders(): Record<string, string> {
