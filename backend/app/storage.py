@@ -259,8 +259,43 @@ def delete_media(media_id: str) -> Optional[str]:
 
 def count_media() -> int:
     with _session() as db:
-        return
-    db.query(MediaRow).count()
+        return db.query(MediaRow).count()
+
+def count_blob_media() -> int:
+    with _session() as db:
+        return (
+            db.query(MediaRow)
+            .filter(MediaRow.storage_key.like("https://%"))
+            .count()
+        )
+
+
+def get_db_size_bytes() -> int:
+    if DATABASE_URL.startswith("sqlite"):
+        raw = DATABASE_URL.split("///", 1)[-1] if "///" in DATABASE_URL else ""
+        if not raw:
+            return 0
+        try:
+            return os.path.getsize(raw)
+        except OSError:
+            return 0
+    try:
+        from sqlalchemy import text
+        with _session() as db:
+            result = db.execute(text("SELECT pg_database_size(current_database())"))
+            row = result.fetchone()
+            return row[0] if row else 0
+    except Exception:
+        return 0
+
+
+def get_db_type() -> str:
+    if DATABASE_URL.startswith("sqlite"):
+        return "sqlite"
+    if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
+        return "postgresql"
+    return "unknown"
+
 
 def _media_row_to_dict(row: MediaRow) -> Dict[str, Any]:
     return {

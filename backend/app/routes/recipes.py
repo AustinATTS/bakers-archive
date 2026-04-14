@@ -110,6 +110,35 @@ def update_recipe_text(
     storage.write_text_file(recipe_id, "recipe.txt", recipe_update.content)
     return {"message": "Recipe updated successfully"}
 
+@router.put("/{recipe_id}/meta", response_model=models.RecipeMeta)
+def update_recipe_meta(
+    recipe_id: str,
+    recipe_update: models.RecipeUpdate,
+    _current_user: Dict[str, Any] = Depends(auth.get_current_user),
+) -> models.RecipeMeta:
+    _validate_recipe_id_safe(recipe_id)
+    if not storage.recipe_exists(recipe_id):
+        raise HTTPException(status_code=404, detail=f"Recipe '{recipe_id}' not found")
+    update_data: Dict[str, Any] = {}
+    if recipe_update.name is not None:
+        update_data["name"] = recipe_update.name
+    if recipe_update.author is not None:
+        update_data["author"] = recipe_update.author
+    if recipe_update.book is not None:
+        update_data["book"] = recipe_update.book
+    if recipe_update.type is not None:
+        update_data["type"] = recipe_update.type
+    if recipe_update.ingredients is not None:
+        update_data["ingredients"] = recipe_update.ingredients
+    if recipe_update.tags is not None:
+        update_data["tags"] = recipe_update.tags
+    if update_data:
+        storage.write_meta(recipe_id, update_data)
+    meta = storage.read_meta(recipe_id)
+    if not meta:
+        raise HTTPException(status_code=500, detail="Failed to read recipe after update")
+    return models.RecipeMeta(**meta)
+
 @router.post("", response_model=models.RecipeMeta, status_code=201)
 def create_recipe(
     recipe_create: models.RecipeCreate,

@@ -2,9 +2,10 @@
 
 from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException, status
+import os
 
 from app import auth, models, storage
-
+from app.blob_storage import is_blob_enabled
 router = APIRouter()
 
 @router.get("/users", response_model=List[models.UserPublic])
@@ -51,8 +52,19 @@ def get_stats(
     recipe_count = len(storage.list_recipe_ids())
     user_count = len(storage.list_users())
     media_count = storage.count_media() or 0
+    blob_count = storage.count_blob_media() if is_blob_enabled() else 0
+    db_size = storage.get_db_size_bytes()
+    db_type = storage.get_db_type()
+    vercel_api_url = os.environ.get("VERCEL_API_PROJECT_URL", "")
+    vercel_frontend_url = os.environ.get("VERCEL_FRONTEND_PROJECT_URL", "")
     return models.AdminStats(
         total_recipes=recipe_count,
         total_users=user_count,
         total_media=media_count,
+        db_type=db_type,
+        db_size_bytes=db_size,
+        blob_enabled=is_blob_enabled(),
+        blob_item_count=blob_count,
+        vercel_api_url=vercel_api_url,
+        vercel_frontend_url=vercel_frontend_url,
     )
