@@ -6,7 +6,7 @@ import httpx
 
 BLOB_READ_WRITE_TOKEN: Optional[str] = os.environ.get("BLOB_READ_WRITE_TOKEN")
 _BLOB_API_VERSION = "7"
-_BLOB_BASE_URL = "https://5hjirotlmd6hrivk.public.blob.vercel-storage.com"
+_BLOB_BASE_URL = "https://blob.vercel-storage.com"
 
 def is_blob_enabled() -> bool:
     return bool(BLOB_READ_WRITE_TOKEN)
